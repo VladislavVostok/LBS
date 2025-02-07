@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using System.IO;
+using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace LoadBalancer
 {
@@ -29,46 +31,82 @@ namespace LoadBalancer
                 _ = Task.Run(() => HandleClientAsync(client));
             }
 
-        }
+
+
+		}
 
         private static async Task HandleClientAsync(TcpClient client)
         {
-            IPEndPoint selectedServer = GetNextServer();
 
-            Console.WriteLine($"Клиент перенаправлен на севре {selectedServer}");
+            var cStream = client.GetStream();
+			byte[] buff = new byte[1024];
+			int byteRead = await cStream.ReadAsync(buff, 0, buff.Length);
+			string response = Encoding.UTF8.GetString(buff, 0, byteRead);
 
-
-
-            try
+            if (response.Trim() == "GET_SERVERS")
             {
-                 // TODO: Если клиент был подключен его нужно адресовать на тотже сервер.
-                if (!await IsServerAvailableAsync(selectedServer))
+
+                string res = "";
+
+                foreach (var s in _servers)
                 {
-                    Console.WriteLine($"Сервер {selectedServer} отдыхает. Пропускаем...");
-                    return;
+                    res += s.ToString() + " | ";
                 }
 
-                using (TcpClient server = new TcpClient())
+				byte[] re = Encoding.UTF8.GetBytes(res);
+				await cStream.WriteAsync(re, 0, re.Length);
+
+			}
+			else if(response.Trim().StartsWith("CONNET_TO") )
+
+			{
+
+                //IPEndPoint selectedServer = GetNextServer();
+
+				IPEndPoint selectedServer = _servers[Convert.ToInt32(response.Trim().Split(" ")[1])];
+
+				byte[] re = Encoding.UTF8.GetBytes("OK");
+				await cStream.WriteAsync(re, 0, re.Length);
+
+				Console.WriteLine($"Клиент перенаправлен на севре {selectedServer}");
+
+
+
+                try
                 {
 
-                    await server.ConnectAsync(selectedServer);
 
-                    await Task.WhenAll(
-                        RedirectDataAsync(client.GetStream(), server.GetStream()),
-                        RedirectDataAsync(server.GetStream(), client.GetStream())
-                    );
+
+
+                //TODO: Если клиент был подключен его нужно адресовать на тотже сервер.
+                    if (!await IsServerAvailableAsync(selectedServer))
+                    {
+                        Console.WriteLine($"Сервер {selectedServer} отдыхает. Пропускаем...");
+                        return;
+                    }
+
+                    using (TcpClient server = new TcpClient())
+                    {
+
+                        await server.ConnectAsync(selectedServer);
+
+                        await Task.WhenAll(
+                            RedirectDataAsync(client.GetStream(), server.GetStream()),
+                            RedirectDataAsync(server.GetStream(), client.GetStream())
+                        );
+
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                    Console.WriteLine($"Error connecting to server: {ex.Message} - {ex.InnerException}");
 
                 }
-            }
-            catch (Exception ex)
-            {
-
-                Console.WriteLine($"Error connecting to server: {ex.Message} - {ex.InnerException}");
-
-            }
-            finally
-            {
-                client.Close();
+                finally
+                {
+                    client.Close();
+                }
             }
 
         }
