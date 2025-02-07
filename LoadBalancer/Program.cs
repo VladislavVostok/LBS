@@ -13,7 +13,7 @@ namespace LoadBalancer
             new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5003)
         };
 
-        private static readonly  object _lock = new object();
+        private static readonly object _lock = new object();
         private static int _currentServerIndex = 0;
 
         public static async Task Main(string[] args)
@@ -23,7 +23,8 @@ namespace LoadBalancer
 
             Console.WriteLine("Балансировачный сервер запущен на порту 5000;");
 
-            while (true) { 
+            while (true)
+            {
                 TcpClient client = await listener.AcceptTcpClientAsync();
                 _ = Task.Run(() => HandleClientAsync(client));
             }
@@ -36,7 +37,7 @@ namespace LoadBalancer
 
             Console.WriteLine($"Клиент перенаправлен на севре {selectedServer}");
 
-            using TcpClient server = new TcpClient();
+
 
             try
             {
@@ -46,12 +47,17 @@ namespace LoadBalancer
                     return;
                 }
 
-                await Task.WhenAll(
-                    RedirectDataAsync(client.GetStream(), server.GetStream()),
-                    RedirectDataAsync(server.GetStream(), client.GetStream())
-                );
+                using (TcpClient server = new TcpClient())
+                {
 
+                    await server.ConnectAsync(selectedServer);
 
+                    await Task.WhenAll(
+                        RedirectDataAsync(client.GetStream(), server.GetStream()),
+                        RedirectDataAsync(server.GetStream(), client.GetStream())
+                    );
+
+                }
             }
             catch (Exception ex)
             {
@@ -59,27 +65,31 @@ namespace LoadBalancer
                 Console.WriteLine($"Error connecting to server: {ex.Message} - {ex.InnerException}");
 
             }
-            finally { 
+            finally
+            {
                 client.Close();
             }
 
-		}
+        }
 
-		private static async Task RedirectDataAsync(NetworkStream from, NetworkStream to)
-		{
+        private static async Task RedirectDataAsync(NetworkStream from, NetworkStream to)
+        {
             byte[] buffer = new byte[1024];
             int bytesRead;
 
-            try {
+            try
+            {
 
-				while ((bytesRead = await from.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                while ((bytesRead = await from.ReadAsync(buffer, 0, buffer.Length)) > 0)
 
-				{
+                {
 
-					await to.WriteAsync(buffer, 0, bytesRead);
+                    await to.WriteAsync(buffer, 0, bytesRead);
 
-				}
-			} catch (Exception ex) {
+                }
+            }
+            catch (Exception ex)
+            {
                 Console.WriteLine($"Ошибка: {ex.Message} - {ex.InnerException}");
             }
             finally
@@ -87,21 +97,26 @@ namespace LoadBalancer
                 from.Close();
                 to.Close();
             }
-		}
+        }
 
-		private static async Task<bool> IsServerAvailableAsync(IPEndPoint server)
+        private static async Task<bool> IsServerAvailableAsync(IPEndPoint server)
         {
-            try {
+            try
+            {
                 using var pingClient = new TcpClient();
                 await pingClient.ConnectAsync(server.Address, server.Port);
+                Console.WriteLine($"Подключение к серверу {server} установлено.");
                 return true;
-            } catch {
-            
+            }
+            catch
+            {
+
                 return false;
             }
         }
 
-        private static IPEndPoint GetNextServer() {
+        private static IPEndPoint GetNextServer()
+        {
 
             lock (_lock)
             {
