@@ -13,14 +13,17 @@ namespace Client
 
 				NetworkStream stream = client.GetStream();
 
-				byte[] massage = Encoding.UTF8.GetBytes("Hello, Server!");
+				while (true)
+				{
+					byte[] massage = Encoding.UTF8.GetBytes("Hello, Server!");
 
-				await stream.WriteAsync(massage, 0, massage.Length);
+					await stream.WriteAsync(massage, 0, massage.Length);
 
-				byte[] buffer = new byte[1024];
-				int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-
-				await Task.Delay(1000);	
+					byte[] buffer = new byte[1024];
+					int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+					Console.WriteLine($"{client.Client.RemoteEndPoint} отправил: {Encoding.UTF8.GetString(buffer)}");
+					await Task.Delay(2000);
+				}
 			}
 		}
 	}

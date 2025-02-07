@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Server
 {
@@ -7,12 +8,8 @@ namespace Server
 	{
 		public static async Task Main(string[] args)
 		{
-			if (args.Length == 0)
-			{
-				Console.WriteLine("Нет порта!");
-			}
+			int port = args.Length == 0 ? 5001 : int.Parse(args[0]);
 
-			int port = int.Parse(args[0]);
 
 			TcpListener listener = new TcpListener(IPAddress.Any, port);
 
@@ -41,6 +38,7 @@ namespace Server
 				while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
 				{
 					await stream.WriteAsync(buffer, 0, bytesRead);
+					Console.WriteLine($"{client.Client.RemoteEndPoint} отправил: {Encoding.UTF8.GetString(buffer)}");
 				}
 			}
 			catch (Exception ex)

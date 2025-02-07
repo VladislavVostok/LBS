@@ -41,6 +41,7 @@ namespace LoadBalancer
 
             try
             {
+                 // TODO: Если клиент был подключен его нужно адресовать на тотже сервер.
                 if (!await IsServerAvailableAsync(selectedServer))
                 {
                     Console.WriteLine($"Сервер {selectedServer} отдыхает. Пропускаем...");
@@ -94,8 +95,8 @@ namespace LoadBalancer
             }
             finally
             {
-                from.Close();
-                to.Close();
+                await from.DisposeAsync();
+                await to.DisposeAsync();
             }
         }
 
@@ -103,9 +104,11 @@ namespace LoadBalancer
         {
             try
             {
-                using var pingClient = new TcpClient();
-                await pingClient.ConnectAsync(server.Address, server.Port);
-                Console.WriteLine($"Подключение к серверу {server} установлено.");
+                using (TcpClient pingClient = new TcpClient())
+                {
+                    await pingClient.ConnectAsync(server.Address, server.Port);
+                    Console.WriteLine($"Подключение к серверу {server} установлено.");
+                }
                 return true;
             }
             catch
