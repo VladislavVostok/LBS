@@ -9,13 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csproj", "{FC71FAEB-79ED-477D-84E7-1DFFB0D3C7A6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PokerServer", "PokerServer\PokerServer.csproj", "{A2ACBE58-D396-48D5-88B9-9D702285DFCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthServer", "AuthServer\AuthServer.csproj", "{DA612944-9C77-4EBB-9B3F-18FF9EEE9F40}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PokerClientWPF", "PokerClientWPF\PokerClientWPF.csproj", "{5B29F72A-6A99-4425-B54F-5BF1877E4856}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PokerClientCLI", "PokerClientCLI\PokerClientCLI.csproj", "{D10E50F7-1703-4B1E-A339-4528089E6913}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthServer", "AuthServer\AuthServer.csproj", "{DA612944-9C77-4EBB-9B3F-18FF9EEE9F40}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServer", "ChatServer\ChatServer.csproj", "{12F7724D-790E-45EA-B07D-99D6FC424E3D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,22 +31,14 @@ Global
 		{FC71FAEB-79ED-477D-84E7-1DFFB0D3C7A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC71FAEB-79ED-477D-84E7-1DFFB0D3C7A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC71FAEB-79ED-477D-84E7-1DFFB0D3C7A6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A2ACBE58-D396-48D5-88B9-9D702285DFCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A2ACBE58-D396-48D5-88B9-9D702285DFCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A2ACBE58-D396-48D5-88B9-9D702285DFCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A2ACBE58-D396-48D5-88B9-9D702285DFCA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5B29F72A-6A99-4425-B54F-5BF1877E4856}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5B29F72A-6A99-4425-B54F-5BF1877E4856}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5B29F72A-6A99-4425-B54F-5BF1877E4856}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5B29F72A-6A99-4425-B54F-5BF1877E4856}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D10E50F7-1703-4B1E-A339-4528089E6913}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D10E50F7-1703-4B1E-A339-4528089E6913}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D10E50F7-1703-4B1E-A339-4528089E6913}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D10E50F7-1703-4B1E-A339-4528089E6913}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DA612944-9C77-4EBB-9B3F-18FF9EEE9F40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DA612944-9C77-4EBB-9B3F-18FF9EEE9F40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA612944-9C77-4EBB-9B3F-18FF9EEE9F40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA612944-9C77-4EBB-9B3F-18FF9EEE9F40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12F7724D-790E-45EA-B07D-99D6FC424E3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12F7724D-790E-45EA-B07D-99D6FC424E3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12F7724D-790E-45EA-B07D-99D6FC424E3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12F7724D-790E-45EA-B07D-99D6FC424E3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
