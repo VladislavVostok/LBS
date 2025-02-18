@@ -9,9 +9,9 @@ namespace LoadBalancer;
 class LoadBalancer
 {
 	private static readonly List<IPEndPoint> _server = new(){
-		new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5001),
-		new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5002),
-		new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5003)
+		new IPEndPoint(IPAddress.Parse("62.113.44.183"), 5001), ///////
+		new IPEndPoint(IPAddress.Parse("62.113.44.183"), 5002),
+		new IPEndPoint(IPAddress.Parse("62.113.44.183"), 5003)
 	};
 
 	private static readonly object _lock = new object();
