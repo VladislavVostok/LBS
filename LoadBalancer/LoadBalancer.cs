@@ -20,7 +20,7 @@ class LoadBalancer
 
 	static async Task Main(string[] args)
 	{
-		TcpListener listener = new TcpListener(IPAddress.Any, 5000);
+		TcpListener listener = new TcpListener(IPAddress.Parse("62.113.44.183"), 5000);
 		listener.Start();
 
 		Console.WriteLine("Балансировочный сервер запущен на порту 5000");
