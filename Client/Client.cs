@@ -1,4 +1,6 @@
-﻿using System.Net.Sockets;
+﻿using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Text;
 using System.Text.Json;
 
@@ -32,9 +34,9 @@ namespace Client
 
 			// Подключаемся к балансировщику и чат-серверу
 			var pokerTask = ConnectToBalancer(token);
-			var chatTask = ConnectToChatServer();
+			//var chatTask = ConnectToChatServer();
 
-			await Task.WhenAll(pokerTask, chatTask);
+			await Task.WhenAll(pokerTask);//, chatTask);
 		}
 
 
@@ -44,15 +46,22 @@ namespace Client
 			{
 				using TcpClient client = new TcpClient();
 				await client.ConnectAsync(BalancerIp, BalancerPort);
-				NetworkStream stream = client.GetStream();
+
+
+				SslStream sslStream = new SslStream(client.GetStream(), false,
+					// В демо отключаем строгую проверку сертификата сервера
+					(sender, cert, chain, sslPolicyErrors) => true);
+
+				// Аутентифицируемся как TLS-клиент
+				await sslStream.AuthenticateAsClientAsync("BalancerServer", null, SslProtocols.Tls12, false);
 
 				// Отправляем токен балансировщику
 				byte[] tokenData = Encoding.UTF8.GetBytes(token);
-				await stream.WriteAsync(tokenData, 0, tokenData.Length);
+				await sslStream.WriteAsync(tokenData, 0, tokenData.Length);
 
 				// Читаем ответ от покерного сервера через балансировщик
 				byte[] buffer = new byte[1024];
-				int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+				int bytesRead = await sslStream.ReadAsync(buffer, 0, buffer.Length);
 				string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
 				Console.WriteLine($"Ответ от балансировочного сервера: {response}");
@@ -62,9 +71,9 @@ namespace Client
 					while (true)
 					{
 						tokenData = Encoding.UTF8.GetBytes("DEAL_CARDS");
-						await stream.WriteAsync(tokenData, 0, tokenData.Length);
+						await sslStream.WriteAsync(tokenData, 0, tokenData.Length);
 
-						bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+						bytesRead = await sslStream.ReadAsync(buffer, 0, buffer.Length);
 						response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 						Console.WriteLine($"Ваши карты сударь: {response}");
 					}
@@ -118,16 +127,24 @@ namespace Client
 			{
 				using TcpClient client = new TcpClient();
 				await client.ConnectAsync(AuthServerIp, AuthServerPort);
-				NetworkStream stream = client.GetStream();
+
+				SslStream sslStream = new SslStream(client.GetStream(), false,
+					// В демо отключаем строгую проверку сертификата сервера
+					(sender, cert, chain, sslPolicyErrors) => true);
+
+				// Аутентифицируемся как TLS-клиент
+				sslStream.AuthenticateAsClient("AuthServer", null, SslProtocols.Tls12, false);
+
+
 
 				var loginRequest = new { Username = username, Password = password };
 				string jsonRequest = JsonSerializer.Serialize(loginRequest);
 				byte[] requestData = Encoding.UTF8.GetBytes(jsonRequest);
 
-				await stream.WriteAsync(requestData, 0, requestData.Length);
+				await sslStream.WriteAsync(requestData, 0, requestData.Length);
 
 				byte[] buffer = new byte[1024];
-				int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+				int bytesRead = await sslStream.ReadAsync(buffer, 0, buffer.Length);
 				string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
 				var response = JsonSerializer.Deserialize<AuthResponse>(responseJson);

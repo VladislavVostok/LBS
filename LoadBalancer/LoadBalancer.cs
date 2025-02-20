@@ -1,7 +1,10 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace LoadBalancer;
@@ -9,9 +12,9 @@ namespace LoadBalancer;
 class LoadBalancer
 {
 	private static readonly List<IPEndPoint> _server = new(){
-		new IPEndPoint(IPAddress.Parse("62.113.44.183"), 5001), ///////
-		new IPEndPoint(IPAddress.Parse("62.113.44.183"), 5002),
-		new IPEndPoint(IPAddress.Parse("62.113.44.183"), 5003)
+		new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5001), ///////
+		new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5002),
+		new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5003)
 	};
 
 	private static readonly object _lock = new object();
@@ -20,7 +23,10 @@ class LoadBalancer
 
 	static async Task Main(string[] args)
 	{
-		TcpListener listener = new TcpListener(IPAddress.Parse("62.113.44.183"), 5000);
+
+		var certificate = new X509Certificate2("serverert.pfx", "qwerty123");
+
+		TcpListener listener = new TcpListener(IPAddress.Parse("127.0.0.1"), 5000);
 		listener.Start();
 
 		Console.WriteLine("Балансировочный сервер запущен на порту 5000");
@@ -30,20 +36,37 @@ class LoadBalancer
 		{
 			TcpClient client = await listener.AcceptTcpClientAsync();
 
-			_ = Task.Run(() => HandleClientAsync(client));
+			_ = Task.Run(() => HandleClientAsync(client, certificate));
 		}
 	}
 
 
-	private static async Task HandleClientAsync(TcpClient client)
+	private static async Task HandleClientAsync(TcpClient client,  X509Certificate2 certificate)
 	{
 
 
 		using (client)
 		{
-			NetworkStream stream = client.GetStream();
+			SslStream sslStreamClient = new SslStream(client.GetStream(), false, (sender, cert, chain, sslPolicyErrors) => true);
+
+			sslStreamClient.AuthenticateAsServer(
+				certificate,
+				clientCertificateRequired: false,
+				enabledSslProtocols: SslProtocols.Tls12,
+				checkCertificateRevocation: false
+			);
+
+
+
 			byte[] buffer = new byte[1024];
-			int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+			int bytesRead = await sslStreamClient.ReadAsync(buffer, 0, buffer.Length);
+
+			if (bytesRead == 0)
+			{
+				Console.WriteLine("[LoadBalancer] Клиент отключился, не прислав токен");
+				return;
+			}
+
 			string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
 			if (!ValidateJwtToken(request))
@@ -54,7 +77,7 @@ class LoadBalancer
 			}
 
 			byte[] response = Encoding.UTF8.GetBytes("OK");
-			await stream.WriteAsync(response, 0, response.Length);
+			await sslStreamClient.WriteAsync(response, 0, response.Length);
 
 
 
@@ -80,9 +103,14 @@ class LoadBalancer
 
 					await server.ConnectAsync(selectedServer);
 
+					SslStream sslStreamServer = new SslStream(server.GetStream(), false, (sender, cert, chain, sslPolicyErrors) => true);
+
+					await sslStreamServer.AuthenticateAsClientAsync("PokerServer", null, SslProtocols.Tls12, false);
+
+
 					await Task.WhenAll(
-						RedirectDataAsync(client.GetStream(), server.GetStream()),
-						RedirectDataAsync(server.GetStream(), client.GetStream())
+						RedirectDataAsync(sslStreamClient, sslStreamServer),
+						RedirectDataAsync(sslStreamServer, sslStreamClient)
 
 					);
 
@@ -99,16 +127,16 @@ class LoadBalancer
 		}
 	}
 
-	private static async Task RedirectDataAsync(NetworkStream from, NetworkStream to)
+	private static async Task RedirectDataAsync(SslStream fromSsl, SslStream toSsl)
 	{
 		byte[] buffer = new byte[1024];
 		int bytesRead;
 
 		try
 		{
-			while ((bytesRead = await from.ReadAsync(buffer, 0, buffer.Length)) > 0)
+			while ((bytesRead = await fromSsl.ReadAsync(buffer, 0, buffer.Length)) > 0)
 			{
-				await to.WriteAsync(buffer, 0, bytesRead);
+				await toSsl.WriteAsync(buffer, 0, bytesRead);
 			}
 		}
 		catch (Exception ex)
@@ -118,8 +146,8 @@ class LoadBalancer
 		}
 		finally
 		{
-			await from.DisposeAsync();
-			await to.DisposeAsync();
+			await fromSsl.DisposeAsync();
+			await toSsl.DisposeAsync();
 		}
 	}
 

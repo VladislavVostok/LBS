@@ -1,5 +1,8 @@
 ﻿using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 
@@ -19,9 +22,12 @@ class Server
 
 	static async Task Main(string[] args)
 	{
+		var certificate = new X509Certificate2("serverert.pfx", "qwerty123");
+
+
 		int port = (args.Length == 0) ? 5001 : int.Parse(args[0]);
 
-		TcpListener listener = new TcpListener(IPAddress.Any, port);
+		TcpListener listener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
 
 		listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 		listener.Start();
@@ -32,31 +38,49 @@ class Server
 		{
 			TcpClient client = await listener.AcceptTcpClientAsync();
 
-			_ = Task.Run(() => HandleClientAsync(client));
+			_ = Task.Run(() => HandleClientAsync(client, certificate));
 		}
 
 	}
 
-	private static async Task HandleClientAsync(TcpClient client)
+	private static async Task HandleClientAsync(TcpClient client, X509Certificate2 certificate)
 	{
 		try
 		{
 			using (client)
 			{
-				NetworkStream stream = client.GetStream();
+				using var sslStream = new SslStream(client.GetStream(), false, (sender, cert, chain, sslPolicyErrors) => true);
+
+				// Аутентифицируемся как TLS-сервер
+				//sslStream.AuthenticateAsServer(
+				//	certificate,
+				//	clientCertificateRequired: false,
+				//	enabledSslProtocols: SslProtocols.Tls12,
+				//	checkCertificateRevocation: false
+				//);
+
+				await sslStream.AuthenticateAsClientAsync("BalancerServer", null, SslProtocols.Tls12, false);
+
+				Console.WriteLine($"[Server] Клиент подключился: {client.Client.RemoteEndPoint}");
+
 				while (true)
 				{
 
 
 					byte[] buffer = new byte[1024];
-					int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+					int bytesRead = await sslStream.ReadAsync(buffer, 0, buffer.Length);
+
+					if (bytesRead <= 0)
+						break; // клиент отключился
+
 					string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-					Console.WriteLine($"Получен запрос: {DateTime.Now.ToString()} {client.Client.RemoteEndPoint}");
+					Console.WriteLine($"[Server] Получен запрос \"{request}\" от {client.Client.RemoteEndPoint}");
+
 					if (request.Trim() == "ALIEVE")
 					{
 						byte[] responseData = Encoding.UTF8.GetBytes("ILOVEYOU");
-						await stream.WriteAsync(responseData, 0, responseData.Length);
+						await sslStream.WriteAsync(responseData, 0, responseData.Length);
 
 					}
 
@@ -64,7 +88,7 @@ class Server
 					{
 						string response = DealCards();
 						byte[] responseData = Encoding.UTF8.GetBytes(response);
-						await stream.WriteAsync(responseData, 0, responseData.Length);
+						await sslStream.WriteAsync(responseData, 0, responseData.Length);
 					}
 				}
 			}

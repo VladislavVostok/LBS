@@ -13,7 +13,7 @@ namespace ChatServer
 
 		static async Task Main(string[] args)
 		{
-			TcpListener listener = new TcpListener(IPAddress.Any, _port);
+			TcpListener listener = new TcpListener(IPAddress.Parse("127.0.0.1"), _port);
 			listener.Start();
 			Console.WriteLine($"Chat Server запущен на порту {_port}");
 			while (true)
